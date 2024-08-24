@@ -94,6 +94,13 @@ class SpotCluster {
     this.clusterEmbedding.centroids.forEach((v,i) => {
       v.forEach((d,j) => points.push({cellType: j, proportion: d, cluster: i}))
     })
+
+    const spotPoints = [];
+    let spot = null;
+    if (this.focusSpot) {
+      spot = this.spotsProcessed[this.focusSpot]
+      spot.vector.forEach((d,i) => spotPoints.push({cellType: i, proportion: d, cluster: spot.cluster}));
+    }
     
     const plot = Plot.plot({
       marginTop: 30, marginBottom: 50, marginLeft: 55, marginRight: 30,
@@ -121,11 +128,20 @@ class SpotCluster {
           stroke: "grey", opacity: .5, strokeDasharray: "2,3", //fill: this.spotColorer, 
         fy: "cluster", r: 4}),
         Plot.dot(points, {y: "cellType", x: "proportion", z: "cluster", 
-          symbol: "cellType",
+          symbol: "cellType", opacity: d => spot && spot.cluster == d.cluster ? 0.4 : 1,
           fill: d => {
             return d.cluster == this.focusCluster ? "yellow" : "grey"
           }, //fill: this.spotColorer, 
         fy: "cluster", r: 4}),
+        Plot.dot(spotPoints, {y: "cellType", x: "proportion", z: "cluster", className: "spot-points",
+          stroke: "crimson",
+          fy: "cluster", r: 4
+        }),
+        Plot.line(spotPoints, {y: "cellType", x: "proportion", z: "cluster", className: "spot-line",
+          stroke: "crimson",
+          fy: "cluster",  strokeDasharray: "2,3"
+        }),
+        
         // Plot.text(points, {text: d =>  d.cellType,  y: "cellType", x: "proportion", z: "cluster",  fy: "cluster"}),
         // Plot.text(points, {
         //   text: d => d.cellType, dx: 6, textAnchor: "start", y: "cellType", x: "proportion", z: "cluster",  
@@ -171,8 +187,9 @@ class SpotCluster {
           strokeOpacity: this.shapeStrokeOpacity
         }),
 
-        Plot.dot(this.spotsProcessed.filter(d => !d.correctlyContained), {
-          x: "x", y: "y", fill: this.spotColorer, stroke: "white", strokeWidth: 1, r: 3
+        Plot.dot(this.spotsProcessed, {
+          className: "all-spots",
+          x: "x", y: "y", fill: this.spotColorer, stroke: "white", strokeWidth: 1, r: 3, opacity: d => d.correctlyContained ? 0 : 1,
         }),
       ]
     })
@@ -194,19 +211,66 @@ class SpotCluster {
         .attr("stroke-width", 2.5);
     })
 
-    d3.select(plot).selectAll(".outer-line path")
-      .on("mouseenter", (e,d) => {
-        this.focusCluster = this.clusterPoints[d[0]].cluster;
-        this.#drawClusterSummary();
-      })
+    // d3.select(plot).selectAll(".outer-line path")
+    //   .on("mouseenter", (e,d) => {
+    //     this.focusCluster = this.clusterPoints[d[0]].cluster;
+    //     this.#drawClusterSummary();
+    //   })
     
-    d3.select(plot).select(".outer-line")
-      .on("mouseleave", (e,d) => {
-        this.focusCluster = null; 
-        this.#drawClusterSummary();
-      })
+    // d3.select(plot).select(".outer-line")
+    //   .on("mouseleave", (e,d) => {
+    //     this.focusCluster = null; 
+    //     this.#drawClusterSummary();
+    //   })
 
-    
+    const xScale = plot.scale("x");
+    const yScale = plot.scale("y");
+    const tPoints = this.spotsProcessed.map(d => [xScale.apply(d.x), yScale.apply(d.y)]);
+    const delaunay = d3.Delaunay.from(tPoints);
+
+    let allSpots = null;
+
+    const dotSelect = d3.select(plot).selectAll("circle")
+    plot.addEventListener("mousemove", (e) => {
+      if (!allSpots) {
+        allSpots = d3.select(plot).select(".all-spots");
+        allSpots.style("pointer-events", "none");
+      }
+
+      const pointIndex = delaunay.find(e.offsetX, e.offsetY);
+      const distance = euclideanDistance(tPoints[pointIndex], [e.offsetX, e.offsetY]);
+      let focusIndex = null;
+      if (distance < 30) {
+        focusIndex = pointIndex;
+      } else {
+        focusIndex = null;
+      }
+
+      if (focusIndex != this.focusSpot) {
+        this.focusSpot = focusIndex;
+        dotSelect.attr("opacity", d => {
+          if (d == focusIndex) {
+            return 1
+          } else {
+            return this.spotsProcessed[d].correctlyContained ? 0 : 1
+          }
+        });
+        dotSelect.attr("r", d => d == focusIndex ? 5:3);
+        this.#drawClusterSummary();   
+      }
+
+     
+
+      // if (this.focusSpot != pointIndex) {
+      //   this.focusSpot = pointIndex;
+      //   this.#drawClusterSummary();   
+      // } else {
+      //   this.focusSpot = null;
+      //   this.#drawClusterSummary();   
+      // }
+
+      
+    })
 
     this.elements.slideOverlay.innerHTML = '';
     this.elements.slideOverlay.appendChild(plot);
@@ -506,6 +570,15 @@ function groupPoints(points, threshold, labelField="label") {
 
 //   return {setOpened}
 // }
+
+function euclideanDistance(point1, point2) {
+  let sumOfSquares = 0;
+  for (let i = 0; i < point1.length; i++) {
+    sumOfSquares += Math.pow(point1[i] - point2[i], 2);
+  }
+
+  return Math.sqrt(sumOfSquares);
+}
 
 function addPopperTooltip(element) {
 
