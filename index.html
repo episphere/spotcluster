@@ -42,59 +42,48 @@
           <i id="settings-button" class="fa-solid fa-gear"></i>
         </div>
 
-        <div id="slide-container" class="dashboard-card">
-          <div id="slide-image-container">
-            <div id="slide-overlay"></div>
-            <img id="slide-image" src="data/tissue_hires_image.png">
+        <div id="right-stuff">
+          <div id="settings-panel" class="dashboard-card">
+            <div class="setting-group">
+              <label for="number-kclusters"># Clusters:</label>
+              <input type="number"  value="6"  id="number-kclusters">
+            </div>
+
+            <div class="setting-group">
+              <label for="number-groupthreshold">Group threshold:</label>
+              <input type="number"  value="5"  id="number-groupthreshold">
+            </div>
+
+            <div class="setting-group">
+              <label for="range-linewidth">Line width:</label>
+              <input type="range" min="1" max="10"  value="4" step=".5"   id="range-linewidth">
+              <span for="range-linewidth"></span>
+            </div>
+
+            <div class="setting-group">
+              <label for="range-imageopacity">Slide opacity:</label>
+              <input type="range" min="0" max="1"  value="0.8" step=".05"  id="range-imageopacity">
+              <span for="range-imageopacity"></span>
+            </div>
           </div>
-          
+          <div id="panels-container">
+            <div id="slide-container" class="dashboard-card">
+              <div id="slide-image-container">
+                <div id="slide-overlay"></div>
+                <img id="slide-image" src="data/tissue_hires_image.png">
+              </div>
+            </div>
+            <div id="cluster-container" class="dashboard-card">
+              <div id="cluster-plot-container"></div>
+            </div>
+          </div>
+         
         </div>
-        <div id="cluster-container" class="dashboard-card">
-          <div id="cluster-plot-container"></div>
-        </div>
+
+       
       </div>
     </div>
 
-    <div id="other-elements" style="display: none">
-      <div id="settings-template">
-        <div id="settings-topbar">
-          <div id="settings-title"></div>
-          <i id="settings-close" class="fa-solid fa-xmark close-button"></i>
-        </div>
-        <div id="settings-content">
-          
-        </div>
-      </div>
-
-      <div id="settings-settings">
-        <div class="d-flex">
-          <label for="range-num-cluster"># Cluster</label>
-          <input min="2", max="32" value="8" type="range" class="form-control-range" id="range-numcluster">
-          <span for="range-numcluster">.</span>
-        </div>
-        <div class="d-flex">
-          <label for="range-groupthreshold">Group threshold</label>
-          <input type="range"  min="2", max="20" value="5"  class="form-control-range" id="range-groupthreshold">
-          <span for="range-groupthreshold">.</span>
-        </div>
-        <div class="d-flex">
-          <label for="range-linewidth">Line width</label>
-          <input type="range" min="1", max="10"  value="4"  class="form-control-range" id="range-linewidth">
-          <span for="range-linewidth">.</span>
-        </div>
-
-<!--       
-        <div class="form-group">
-          <label for="lineWidth">Line width</label>
-          <input type="range" class="form-control-range" id="lineWidth">
-        </div>
-      
-        <div class="form-group">
-          <label for="groupThreshold">Group threshold</label>
-          <input type="range" class="form-control-range" id="groupThreshold">
-        </div> -->
-      </div>
-    </div>
 
     <script src="src/SpotCluster.js" type="module"></script>
 </html>

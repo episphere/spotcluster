@@ -19,6 +19,7 @@ class SpotCluster {
       shapeStrokeWidth: 3,
       slideOpacity: .6,
       diagonalSpacing: 15,
+      groupCountThreshold: 5,
       ...options
     }
     Object.assign(this, options);
@@ -34,7 +35,8 @@ class SpotCluster {
       slideOverlay: document.getElementById("slide-overlay"),
       clusterContainer: document.getElementById("cluster-container"),
       clusterPlotContainer: document.getElementById("cluster-plot-container"),
-      settingsSettings: document.getElementById("settings-settings")
+      settingsPanel: document.getElementById("settings-panel"),
+      settingsButton: document.getElementById("settings-button"),
     };
 
     this.elements.slideImage.style.opacity = this.slideOpacity;
@@ -52,34 +54,55 @@ class SpotCluster {
   }
 
   hookSettings() {
-    const settingsButton = document.getElementById("settings-button");
-    const content =  this.elements.settingsSettings;
-    // addOpenableSettings(document.getElementById("content"), settingsButton, "Settings", content);
-    const tooltip = addPopperTooltip(this.elements.content)
-    // const content = document.createElement("div");
-
-    let open = false;
-
-    settingsButton.addEventListener("click", () => {
-      if (open) {
-        tooltip.hide();
+    let settingsOpen = false; 
+    this.elements.settingsButton.addEventListener("click", () => {
+      settingsOpen = !settingsOpen;
+      if (settingsOpen) {
+        this.elements.content.classList.add("settings-open");
       } else {
-        tooltip.show(settingsButton, content);
+        this.elements.content.classList.remove("settings-open");
       }
-      open = !open;
-    })
-   
-    for (const range of document.getElementsByClassName("form-control-range")) {
-      const span = document.querySelector(`span[for='${range.getAttribute("id")}']`)
-      span.innerText = range.value
-      range.addEventListener("input", () => {
-        span.innerText = range.value
+    });
+
+    const inputs = document.querySelectorAll("input[type='range']");
+    for (const input of inputs) {
+      const span = document.querySelector(`span[for='${input.getAttribute("id")}']`);
+      input.addEventListener("input", () => {
+        span.innerText = input.value;
       })
+      span.innerText = input.value;
     }
 
-    // document.getElementById("range-linewidth").addEventListener("input", () => {
-    //   console.log("hhhh")
-    // })
+    const linewidthInput = document.getElementById("range-linewidth");
+    linewidthInput.addEventListener("input", () => {
+      this.shapeStrokeWidth = parseFloat(linewidthInput.value);
+      this.draw();
+    })
+
+    const slideOpacityInput = document.getElementById("range-imageopacity");
+    slideOpacityInput.addEventListener("input", () => {
+      this.slideOpacity = parseFloat(slideOpacityInput.value);
+      this.elements.slideImage.style.opacity = this.slideOpacity;
+    });
+
+    const kInput = document.getElementById("number-kclusters");
+    kInput.addEventListener("input", () => {
+      const kClusters = parseInt(kInput.value);
+      console.log(kClusters);
+      if (Number.isFinite(kClusters)) {
+        this.kClusters = kClusters;
+        this.run().then(() => this.draw());
+      }
+    });
+
+    const groupThresholdInput = document.getElementById("number-groupthreshold");
+    groupThresholdInput.addEventListener("input", () => {
+      const groupCountThreshold = parseInt(groupThresholdInput.value);
+      if (Number.isFinite(groupCountThreshold)) {
+        this.groupCountThreshold = groupCountThreshold;
+        this.run().then(() => this.draw());
+      }
+    })
   }
 
   draw() {
@@ -279,7 +302,7 @@ class SpotCluster {
   async run() {
     this.clusterEmbedding = await clusterEmbed(this.spots.map(d => d.vector), this.kClusters, this.clusterEmbeddingMethod);
     this.clusterEmbedding.labels.forEach((label, i) => this.spots[i].cluster = label);
-    const quantizationResult = encapsulate(this.spots);
+    const quantizationResult = encapsulate(this.spots, {groupCountThreshold: this.groupCountThreshold});
     this.spotsProcessed = quantizationResult.points;
     this.groupShapes = quantizationResult.groupShapes;
 

@@ -4,8 +4,10 @@
 
   --header-height: calc(var(--main-header-height) + var(--info-header-height));
   --moran-dual-height: 150px;
-  --main-padding: 20px;
+  --main-padding: 10px;
   --title-height: 30px;
+
+  --setting-height: 0px;
 }
 
 body {
@@ -105,22 +107,40 @@ header {
 }
 
 #content {
-  height: calc(100vh - var(--header-height) - var(--main-padding)*2); 
-  max-height:  calc(100vh - var(--header-height) - var(--main-padding)*2); 
-  padding: var(--main-padding);
+  --total-height: calc(100vh - var(--header-height));
+  height: var(--total-height);
+  max-height:  var(--total-height);
   display: flex; 
   align-items: center;
   justify-content: center;
   background-color: #f4f0f5;
 }
 
+#content.settings-open {
+  --setting-height: 55px;
+}
+
 #dashboard {
   position: relative;
   /* width: fit-content; */
-  max-height:  calc(100vh - var(--header-height) - var(--main-padding)*2); 
+  height: calc( var(--total-height) - var(--main-padding)*2 );
+  /* max-height:  calc(100vh - var(--header-height) - var(--main-padding)*2 - var(--setting-height));  */
   display: flex;
   gap: 15px;
-  
+}
+
+
+#right-stuff {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  height: calc(var(--total-height) - var(--main-padding)*2 );
+}
+
+#panels-container {
+  display: flex;
+  gap: 10px;
+  height: calc(var(--total-height) - var(--main-padding)*2 - var(--setting-height));
 }
 
 .dashboard-card {
@@ -150,7 +170,7 @@ header {
 
 #slide-container {
   flex-shrink: 0;
-
+  /* height: 100%; */
 }
 
 #cluster-container {
@@ -163,7 +183,8 @@ header {
 }
 
 #slide-image-container {
-  height: calc(100vh - var(--header-height) - var(--main-padding)*2 - 30px);
+  /* height: calc(100vh - var(--header-height) - var(--main-padding)*2 - var(--setting-height) - 40px); */
+  height: 100%;
   position: relative;
 
 }
@@ -204,7 +225,7 @@ header {
 }
 
 .outer-line path:hover {
-  stroke: yellow;
+  /* stroke: black; */
 }
 
 
@@ -295,4 +316,36 @@ header {
 .openable-settings {
   pointer-events: all;
 
+}
+
+
+
+
+#settings-panel {
+  display: none; 
+  padding: 12px;
+  align-items: center;
+  font-family: sans-serif;
+  padding-inline: 20px;
+  justify-content: space-around;
+  /* display: none; */
+}
+
+.settings-open #settings-panel {
+  display: flex;
+}
+
+.setting-group {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: rgb(63, 63, 72);
+}
+
+.setting-group span {
+  width: 50px;
+}
+
+input[type='number'] {
+  width: 50px;
 }
