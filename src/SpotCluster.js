@@ -37,6 +37,8 @@ class SpotCluster {
       clusterPlotContainer: document.getElementById("cluster-plot-container"),
       settingsPanel: document.getElementById("settings-panel"),
       settingsButton: document.getElementById("settings-button"),
+      colorWheel: document.getElementById("color-wheel"),
+      clusterGrid: document.getElementById("cluster-grid"),
     };
 
     this.elements.slideImage.style.opacity = this.slideOpacity;
@@ -107,7 +109,9 @@ class SpotCluster {
 
   draw() {
    this.#drawSlideOverlay();
-   this.#drawClusterSummary()
+   this.#drawClusterSummary();
+   this.#drawClusterColorWheel();
+   this.#drawClusterColorOverlay();
   }
 
   #drawClusterSummary() {
@@ -280,6 +284,7 @@ class SpotCluster {
         });
         dotSelect.attr("r", d => d == focusIndex ? 5:3);
         this.#drawClusterSummary();   
+        this.#drawClusterColorOverlay();
       }
 
      
@@ -299,6 +304,18 @@ class SpotCluster {
     this.elements.slideOverlay.appendChild(plot);
   }
 
+  #drawClusterColorWheel() {
+    this.elements.colorWheel.innerHTML = '';
+
+    
+    const width = 100;
+    const colorWheel = drawColorCircle(this.colorer, 75, width);
+
+
+    this.elements.colorWheel.appendChild(colorWheel);
+    // colorWheel.style.transform = "rotate(90deg)";
+  }
+
   async run() {
     this.clusterEmbedding = await clusterEmbed(this.spots.map(d => d.vector), this.kClusters, this.clusterEmbeddingMethod);
     this.clusterEmbedding.labels.forEach((label, i) => this.spots[i].cluster = label);
@@ -315,6 +332,35 @@ class SpotCluster {
 
     this.colorer = vizHelper.positionColorer(this.clusterEmbedding.embeddedCentroids, [.7,.7]);
     this.spotColorer = spot => this.colorer(this.clusterEmbedding.embeddedCentroids[spot.cluster]);
+
+  }
+
+  #drawClusterColorOverlay() {
+    this.elements.clusterGrid.innerHTML = '';
+
+    const focusSpot = this.spotsProcessed[this.focusSpot];
+    const textDraw = focusSpot ? [this.clusterEmbedding.embeddedCentroids[focusSpot.cluster]] : []
+
+
+    const width = 100;
+    const grid = Plot.plot({
+      width: width, 
+      height: width,
+      margin: 20,
+      axis: null,
+      marks: [
+        Plot.dot(this.clusterEmbedding.embeddedCentroids, {
+          x:d => d[0], y: d => d[1], 
+          r: (d,i) => i == focusSpot?.cluster ? 6 : 1, stroke: "black"
+        }),
+        Plot.text(textDraw, {
+          text: d => focusSpot.cluster + 1, fontSize: 13,
+          x: d => d[0], y: d => d[1], 
+           fill: "black"
+        }),
+      ]
+    })
+    this.elements.clusterGrid.appendChild(grid);
 
   }
 
@@ -492,107 +538,6 @@ function groupPoints(points, threshold, labelField="label") {
   return groups;
 }
 
-// function addOpenableSettings(container, buttonElement, label, content) {
-//   const buttonLabel = document.createElement("div")
-//   buttonLabel.classList.add("button-label")
-//   buttonLabel.innerText = label 
-
-//   Popper.createPopper(buttonElement, buttonLabel, {
-//     placement: "right",
-//     modifiers: [
-//       {
-//         name: 'offset',
-//         options: {
-//           offset: [-15, 20],
-//         },
-//       },
-//       {
-//         name: 'preventOverflow',
-//         options: {
-//           boundary: container,
-//         },
-//       },
-//     ],
-//   })
-
-  
-//   const settingsContentWrapper = document.createElement("div")
-//   settingsContentWrapper.classList.add("openable-settings")
-//   settingsContentWrapper.classList.add("custom-tooltip")
-//   Popper.createPopper(buttonElement, settingsContentWrapper, {
-//     placement: "right",
-//     modifiers: [
-//       {
-//         name: 'offset',
-//         options: {
-//           offset: [-15, 20],
-//         },
-//       },
-//       {
-//         name: 'preventOverflow',
-//         options: {
-//           boundary: container,
-//         },
-//       },
-//     ],
-//   })
-
-
-//   function setOpened(opened) {
-//     if (opened) {
-//       const settingsTemplate = document.getElementById("settings-template")
-//       const settingsContent = document.getElementById("settings-content")
-//       const settingsTitle = document.getElementById("settings-title")
-//       settingsTitle.innerText = label
-
-//       settingsContent.innerHTML = '' 
-//       settingsContent.appendChild(content)
-  
-//       settingsContentWrapper.style.display = "block"
-//       settingsContentWrapper.innerHTML = ''
-//       settingsContentWrapper.appendChild(settingsTemplate)
-
-//       settingsContentWrapper.setAttribute("opened", "true")
-//       const otherSettings = [...document.querySelectorAll(".openable-settings")].filter(d => d != settingsContentWrapper)
-//       otherSettings.forEach(elem => elem.setOpened(false))
-//     } else { 
-//       settingsContentWrapper.removeAttribute("opened")
-//       settingsContentWrapper.style.display = "none"
-//     }
-//   }
-//   settingsContentWrapper.setOpened = setOpened
-
-//   // settingsContentWrapper.addEventListener("click", e => e.stopPropagation())
-
-//   buttonElement.addEventListener("mouseover", () => {
-//     buttonLabel.style.display = "block"
-//   })
-
-//   buttonElement.addEventListener("mouseleave", () => {
-//     buttonLabel.style.display = "none"
-//   })
-
-//   if (!buttonElement.hasAttribute("noopen")) {
-//     buttonElement.addEventListener("click" , (e) => {
-//       e.stopPropagation()
-//       setOpened(!settingsContentWrapper.getAttribute("opened"))
-//     })
-//   }
-  
-
-//   document.getElementById("settings-close").addEventListener("click", () => {
-//     setOpened(false)
-//   })
-
-//   container.addEventListener("click", () => {
-//     setOpened(false)
-//   })
-
-//   container.appendChild(buttonLabel)
-//   container.appendChild(settingsContentWrapper)
-
-//   return {setOpened}
-// }
 
 function euclideanDistance(point1, point2) {
   let sumOfSquares = 0;
@@ -603,46 +548,104 @@ function euclideanDistance(point1, point2) {
   return Math.sqrt(sumOfSquares);
 }
 
-function addPopperTooltip(element) {
+function drawColorCircle(colorer, r, canvasWidth = null) {
+  // This is bad, we ignore the actual colorer to do this.
+  colorer =  vizHelper.positionColorer([[1,0],[-1,0]], [.7,.7]);
 
-  const tooltipElement = document.createElement("div")
-  tooltipElement.classList.add("custom-tooltip")
-  element.appendChild(tooltipElement)
+  const c = Math.floor(r * 2);
 
-  let popper = null
-  function show(targetElement, html) {
-    if (popper) popper.destroy()
-    popper = Popper.createPopper(targetElement, tooltipElement, {
-      placement: "bottom",
-      modifiers: [
-        {
-          name: 'offset',
-          options: {
-            offset: [20, 20],
-          },
-        },
-        {
-          name: 'preventOverflow',
-          options: {
-            boundary: element,
-          },
-        },
-      ],
-    })
+  if (!canvasWidth) {
+    canvasWidth = r;
+  }
 
-    if (html instanceof Element) {
-      tooltipElement.innerHTML = ``
-      tooltipElement.appendChild(html)
-    } else {
-      tooltipElement.innerHTML = html
+  // Create canvas contexts
+  const canvas = document.createElement('canvas');
+  canvas.width = c;
+  canvas.height = c;
+  const context = canvas.getContext('2d');
+
+  const scaleCanvas = document.createElement('canvas');
+  scaleCanvas.width = canvasWidth;
+  scaleCanvas.height = canvasWidth;
+  const scaleContext = scaleCanvas.getContext('2d');
+
+  // Image data for drawing
+  const imgData = context.createImageData(c, c);
+
+  // Draw the circle
+  for (let y = 0; y < c; y++) {
+    const rc = Math.abs(y - r);
+    const width = Math.sqrt(r ** 2 - rc ** 2);
+    const midx = Math.round(r);
+
+    const xrange = [midx - width + 1, midx + width];
+
+    for (let x = midx - width + 1; x < midx + width - 0; x++) {
+      const rgbStr = colorer([(y - r) / r, (x - r) / r], true);
+      const rgb = rgbStr.slice(4, -1).split(",").map(d => parseInt(d));
+      const i = (y * c + Math.round(x - 1)) * 4;
+      imgData.data[i + 0] = rgb[0];
+      imgData.data[i + 1] = rgb[1];
+      imgData.data[i + 2] = rgb[2];
+      imgData.data[i + 3] = 255;
     }
-
-    tooltipElement.style.display = "block"
   }
 
-  function hide() {
-    tooltipElement.style.display = "none"
-  }
+  context.putImageData(imgData, 0, 0);
 
-  return { show, hide }
+  // Clip and scale to final canvas
+  scaleContext.beginPath();
+  scaleContext.arc(canvasWidth / 2, canvasWidth / 2, canvasWidth / 2 - (canvasWidth / c) * 1.5, 0, Math.PI * 2);
+  scaleContext.closePath();
+  scaleContext.clip();
+
+  scaleContext.scale(canvasWidth / c, canvasWidth / c);
+  scaleContext.imageSmoothingEnabled = false;
+  scaleContext.drawImage(canvas, 0, 0, c, c, 0, 0, c, c);
+
+  return scaleCanvas;
 }
+
+// function drawColorCircle(colorer, r, canvasWidth=null) {
+//   const c = Math.floor(r * 2)
+
+//   if (!canvasWidth) {
+//     canvasWidth = r
+//   }
+
+//   const canvas = document.createElement("canvas")
+//   const context = canvas.getContext("2d")
+//   const imgData = context.createImageData(c, c)
+
+//   for (let y = 0; y < c; y++) {
+//     const rc = Math.abs(y-r)
+//     const width = Math.sqrt(r**2 - rc**2)
+//     const midx = Math.round(r)+0
+
+//     const xrange = [midx-width+1, midx+width] 
+        
+//     for (let x = midx-width+1; x < midx+width-0; x++) {
+//       const rgb = colorer([(y-r)/r, (x-r)/r], true)      
+//       const i = (y * c + Math.round(x-1)) * 4
+//       imgData.data[i+0] = rgb[0]
+//       imgData.data[i+1] = rgb[1]
+//       imgData.data[i+2] = rgb[2]
+//       imgData.data[i+3] = 255
+//     }
+//   }
+
+//   context.putImageData(imgData, 0, 0)
+//   const scaleContext = DOM.context2d(canvasWidth, canvasWidth)
+
+//   // Clip jagged edges, a bit of an aesthetic work-around
+//   scaleContext.beginPath()
+//   scaleContext.arc(canvasWidth/2, canvasWidth/2, canvasWidth/2-(canvasWidth/c)*1.5, 0, Math.PI * 2)
+//   scaleContext.closePath()
+//   scaleContext.clip()
+  
+//   scaleContext.scale(canvasWidth/c,canvasWidth/c)
+//   scaleContext.imageSmoothingEnabled = false
+//   scaleContext.drawImage(context.canvas, 0, 0, c, c, 0, 0, c, c)
+
+//   return scaleContext.canvas
+// }
